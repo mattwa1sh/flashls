@@ -1,4 +1,5 @@
 package org.mangui.chromeless {
+	import org.mangui.hls.utils.Log;
     import flashx.textLayout.property.ArrayProperty;
     import org.mangui.hls.utils.ScaleVideo;
     import org.mangui.hls.model.AudioTrack;
@@ -464,6 +465,7 @@ package org.mangui.chromeless {
 
             if (available && stage.stageVideos.length > 0) {
                 _stageVideo = stage.stageVideos[0];
+				_stageVideo.addEventListener(StageVideoEvent.RENDER_STATE, _onStageVideoStateChange);
                 _stageVideo.viewPort = new Rectangle(0, 0, stage.stageWidth, stage.stageHeight);
                 _stageVideo.attachNetStream(_hls.stream);
             } else {
@@ -480,6 +482,10 @@ package org.mangui.chromeless {
                 _load(autoLoadUrl);
             }
         };
+
+		private function _onStageVideoStateChange(event : StageVideoEvent) : void {
+			Log.info("Video decoding:" + event.status);
+		}
 
         protected function _onStageResize(event : Event) : void {
             stage.fullScreenSourceRect = new Rectangle(0, 0, stage.stageWidth, stage.stageHeight);
