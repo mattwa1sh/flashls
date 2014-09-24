@@ -43,6 +43,8 @@ package org.mangui.chromeless {
 
 		/** Map of locations of javascript callbacks **/
 		protected var _callbackMap : Object = new Object(); 
+		
+		protected var _allowHardwareAcceleration : Boolean = true;
 
         /** Initialization. **/
         public function ChromelessPlayer() {
@@ -104,6 +106,7 @@ package org.mangui.chromeless {
             ExternalInterface.addCallback("playerSetJSURLStream", _setJSURLStream);
 			
 			ExternalInterface.addCallback("overrideExternalCallback", _overrideExternalCallback);
+			ExternalInterface.addCallback("setAllowHardwareAcceleration", _setAllowHardwareAcceleration);
         };
 		
 		protected function _setupExternalCallbacks() : void
@@ -435,6 +438,11 @@ package org.mangui.chromeless {
 			_callbackMap[callbackName] = newCallbackName;
 			_logJavascript("over-ride: " + _callbackMap[callbackName] + " = " + newCallbackName);
 		}
+		
+		protected function _setAllowHardwareAcceleration(allow : Boolean) : void {
+			_allowHardwareAcceleration = allow;
+		}
+		
 
         /** Mouse click handler. **/
         protected function _clickHandler(event : MouseEvent) : void {
@@ -448,8 +456,17 @@ package org.mangui.chromeless {
         /** StageVideo detector. **/
         protected function _onStageVideoState(event : StageVideoAvailabilityEvent) : void {
             var available : Boolean = (event.availability == StageVideoAvailability.AVAILABLE);
-			available = false; //hack to test chrome hardware acceleration
 
+			/** this can be set after looking at client browser via js. 
+				currently there are issues with chrome hardware acc
+				in chrome ~37
+			**/
+			
+			if(!_allowHardwareAcceleration) 
+			{
+				available = false; /
+			}
+			
             _hls = new HLS();
             _hls.stage = stage;
             _hls.addEventListener(HLSEvent.PLAYBACK_COMPLETE, _completeHandler);
