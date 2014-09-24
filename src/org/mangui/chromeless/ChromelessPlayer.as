@@ -1,5 +1,5 @@
 package org.mangui.chromeless {
-    import org.mangui.hls.utils.Log;
+    import flashx.textLayout.property.ArrayProperty;
     import org.mangui.hls.utils.ScaleVideo;
     import org.mangui.hls.model.AudioTrack;
     import org.mangui.hls.HLSSettings;
@@ -38,7 +38,10 @@ package org.mangui.chromeless {
         protected var _media_position : Number;
         protected var _duration : Number;
         /** URL autoload feature */
-        protected var _autoLoad : Boolean = false;
+        protected var _autoLoad : Boolean = true;
+
+		/** Map of locations of javascript callbacks **/
+		protected var _callbackMap : Object = new Object(); 
 
         /** Initialization. **/
         public function ChromelessPlayer() {
@@ -46,6 +49,7 @@ package org.mangui.chromeless {
             _setupSheet();
             _setupExternalGetters();
             _setupExternalCallers();
+			_setupExternalCallbacks(); //sets default map of javascript callbacks
 
             setTimeout(_pingJavascript, 50);
         };
@@ -97,8 +101,26 @@ package org.mangui.chromeless {
             ExternalInterface.addCallback("playerCapLeveltoStage", _setCapLeveltoStage);
             ExternalInterface.addCallback("playerSetAudioTrack", _setAudioTrack);
             ExternalInterface.addCallback("playerSetJSURLStream", _setJSURLStream);
+			
+			ExternalInterface.addCallback("overrideExternalCallback", _overrideExternalCallback);
         };
-
+		
+		protected function _setupExternalCallbacks() : void
+		{
+			_callbackMap['onPosition'] = String('onPosition');
+			_callbackMap['onError']	= String('onError');
+			_callbackMap['onFragmentLoaded'] = String('onFragmentLoaded');	
+			_callbackMap['onFragmentPlaying'] = String('onFragmentPlaying');
+			_callbackMap['onManifest'] = String('onManifest');
+			_callbackMap['onPosition'] = String('onPosition');
+			_callbackMap['onVideoSize'] = String('onVideoSize');
+			_callbackMap['onState'] = String('onState');
+			_callbackMap['onAudioTracksListChange']	= String('onAudioTracksListChange');
+			_callbackMap['onSwitch'] = String('onSwitch');
+			_callbackMap['onAudioTrackChange'] = String('onAudioTrackChange');
+			_callbackMap['onHLSReady'] = String('onHLSReady');
+		}
+		
         protected function _setupStage() : void {
             stage.scaleMode = StageScaleMode.NO_SCALE;
             stage.align = StageAlign.TOP_LEFT;
@@ -119,32 +141,32 @@ package org.mangui.chromeless {
 
         /** Notify javascript the framework is ready. **/
         protected function _pingJavascript() : void {
-            ExternalInterface.call("onHLSReady", ExternalInterface.objectID);
+            ExternalInterface.call(_callbackMap['onHLSReady'], ExternalInterface.objectID);
         };
 
         /** Forward events from the framework. **/
         protected function _completeHandler(event : HLSEvent) : void {
             if (ExternalInterface.available) {
-                ExternalInterface.call("onComplete");
+                ExternalInterface.call(_callbackMap['onComplete']);
             }
         };
 
         protected function _errorHandler(event : HLSEvent) : void {
             if (ExternalInterface.available) {
                 var hlsError : HLSError = event.error;
-                ExternalInterface.call("onError", hlsError.code, hlsError.url, hlsError.msg);
+                ExternalInterface.call(_callbackMap['onError'], hlsError.code, hlsError.url, hlsError.msg);
             }
         };
 
         protected function _fragmentLoadedHandler(event : HLSEvent) : void {
             if (ExternalInterface.available) {
-                ExternalInterface.call("onFragmentLoaded", event.loadMetrics.bandwidth, event.loadMetrics.level, stage.stageWidth);
+                ExternalInterface.call(_callbackMap['onFragmentLoaded'], event.loadMetrics.bandwidth, event.loadMetrics.level, stage.stageWidth);
             }
         };
 
         protected function _fragmentPlayingHandler(event : HLSEvent) : void {
             if (ExternalInterface.available) {
-                ExternalInterface.call("onFragmentPlaying", event.playMetrics);
+                ExternalInterface.call(_callbackMap['onFragmentPlaying'], event.playMetrics);
             }
         };
 
@@ -156,15 +178,16 @@ package org.mangui.chromeless {
             }
 
             if (ExternalInterface.available) {
-                ExternalInterface.call("onManifest", _duration);
+                ExternalInterface.call(_callbackMap['onManifest'], _duration);
             }
         };
 
         protected function _mediaTimeHandler(event : HLSEvent) : void {
             _duration = event.mediatime.duration;
             _media_position = event.mediatime.position;
+			
             if (ExternalInterface.available) {
-                ExternalInterface.call("onPosition", event.mediatime.position, event.mediatime.duration, event.mediatime.live_sliding, event.mediatime.buffer, event.mediatime.program_date);
+                ExternalInterface.call(_callbackMap['onPosition'], event.mediatime.position, event.mediatime.duration, event.mediatime.live_sliding, event.mediatime.buffer, event.mediatime.program_date);
             }
 
             var videoWidth : int = _video ? _video.videoWidth : _stageVideo.videoWidth;
@@ -177,7 +200,7 @@ package org.mangui.chromeless {
                     _videoWidth = videoWidth;
                     _resize();
                     if (ExternalInterface.available) {
-                        ExternalInterface.call("onVideoSize", _videoWidth, _videoHeight);
+                        ExternalInterface.call(_callbackMap['onVideoSize'], _videoWidth, _videoHeight);
                     }
                 }
             }
@@ -185,25 +208,25 @@ package org.mangui.chromeless {
 
         protected function _stateHandler(event : HLSEvent) : void {
             if (ExternalInterface.available) {
-                ExternalInterface.call("onState", event.state);
+                ExternalInterface.call(_callbackMap['onState'], event.state);
             }
         };
 
         protected function _levelSwitchHandler(event : HLSEvent) : void {
             if (ExternalInterface.available) {
-                ExternalInterface.call("onSwitch", event.level);
+                ExternalInterface.call(_callbackMap['onSwitch'], event.level);
             }
         };
 
         protected function _audioTracksListChange(event : HLSEvent) : void {
             if (ExternalInterface.available) {
-                ExternalInterface.call("onAudioTracksListChange", _getAudioTrackList());
+                ExternalInterface.call(_callbackMap['onAudioTracksListChange'], _getAudioTrackList());
             }
         }
 
         protected function _audioTrackChange(event : HLSEvent) : void {
             if (ExternalInterface.available) {
-                ExternalInterface.call("onAudioTrackChange", event.audioTrack);
+                ExternalInterface.call(_callbackMap['onAudioTrackChange'], event.audioTrack);
             }
         }
 
@@ -312,6 +335,8 @@ package org.mangui.chromeless {
 
         protected function _play(position : Number=-1) : void {
             _hls.stream.play(null, position);
+			
+			_logJavascript("playin");
         };
 
         protected function _pause() : void {
@@ -399,6 +424,17 @@ package org.mangui.chromeless {
             }
         };
 
+		/** javascript callbacks **/
+		
+		protected function _logJavascript(message : String) : void {
+			ExternalInterface.call("logFlash", message);
+		}
+		
+		protected function _overrideExternalCallback(callbackName : String, newCallbackName : String) : void {
+			_callbackMap[callbackName] = newCallbackName;
+			_logJavascript("over-ride: " + _callbackMap[callbackName] + " = " + newCallbackName);
+		}
+
         /** Mouse click handler. **/
         protected function _clickHandler(event : MouseEvent) : void {
             if (stage.displayState == StageDisplayState.FULL_SCREEN_INTERACTIVE || stage.displayState == StageDisplayState.FULL_SCREEN) {
@@ -411,6 +447,8 @@ package org.mangui.chromeless {
         /** StageVideo detector. **/
         protected function _onStageVideoState(event : StageVideoAvailabilityEvent) : void {
             var available : Boolean = (event.availability == StageVideoAvailability.AVAILABLE);
+			available = false; //hack to test chrome hardware acceleration
+
             _hls = new HLS();
             _hls.stage = stage;
             _hls.addEventListener(HLSEvent.PLAYBACK_COMPLETE, _completeHandler);
@@ -426,7 +464,6 @@ package org.mangui.chromeless {
 
             if (available && stage.stageVideos.length > 0) {
                 _stageVideo = stage.stageVideos[0];
-                _stageVideo.addEventListener(StageVideoEvent.RENDER_STATE, _onStageVideoStateChange)
                 _stageVideo.viewPort = new Rectangle(0, 0, stage.stageWidth, stage.stageHeight);
                 _stageVideo.attachNetStream(_hls.stream);
             } else {
@@ -443,11 +480,6 @@ package org.mangui.chromeless {
                 _load(autoLoadUrl);
             }
         };
-        
-        
-        private function _onStageVideoStateChange(event : StageVideoEvent) : void {
-            Log.info("Video decoding:" + event.status);
-        }
 
         protected function _onStageResize(event : Event) : void {
             stage.fullScreenSourceRect = new Rectangle(0, 0, stage.stageWidth, stage.stageHeight);
