@@ -48,17 +48,19 @@ package org.mangui.chromeless {
 
         /** Initialization. **/
         public function ChromelessPlayer() {
-            _setupStage();
-            _setupSheet();
             _setupExternalGetters();
             _setupExternalCallers();
 			_setupExternalCallbacks(); //sets default map of javascript callbacks
+
+			_setupStage();
+            _setupSheet();
 
             setTimeout(_pingJavascript, 50);
         };
 
         protected function _setupExternalGetters() : void {
             ExternalInterface.addCallback("getLevel", _getLevel);
+			ExternalInterface.addCallback("getBitrate", _getBitrate);
             ExternalInterface.addCallback("getPlaybackLevel", _getPlaybackLevel);
             ExternalInterface.addCallback("getLevels", _getLevels);
             ExternalInterface.addCallback("getAutoLevel", _getAutoLevel);
@@ -111,7 +113,6 @@ package org.mangui.chromeless {
 		
 		protected function _setupExternalCallbacks() : void
 		{
-			_callbackMap['onPosition'] = String('onPosition');
 			_callbackMap['onError']	= String('onError');
 			_callbackMap['onFragmentLoaded'] = String('onFragmentLoaded');	
 			_callbackMap['onFragmentPlaying'] = String('onFragmentPlaying');
@@ -123,6 +124,7 @@ package org.mangui.chromeless {
 			_callbackMap['onSwitch'] = String('onSwitch');
 			_callbackMap['onAudioTrackChange'] = String('onAudioTrackChange');
 			_callbackMap['onHLSReady'] = String('onHLSReady');
+			_callbackMap['logJavascript'] = String('logJavascript');
 		}
 		
         protected function _setupStage() : void {
@@ -237,6 +239,10 @@ package org.mangui.chromeless {
         /** Javascript getters. **/
         protected function _getLevel() : int {
             return _hls.level;
+        };
+
+		protected function _getBitrate() : int {
+            return _hls.levels[_hls.playbacklevel].bitrate;
         };
 
         protected function _getPlaybackLevel() : int {
@@ -431,7 +437,7 @@ package org.mangui.chromeless {
 		/** javascript callbacks **/
 		
 		protected function _logJavascript(message : String) : void {
-			ExternalInterface.call("logFlash", message);
+			ExternalInterface.call(_callbackMap['logJavascript'], message);
 		}
 		
 		protected function _overrideExternalCallback(callbackName : String, newCallbackName : String) : void {
@@ -441,6 +447,7 @@ package org.mangui.chromeless {
 		
 		protected function _setAllowHardwareAcceleration(allow : Boolean) : void {
 			_allowHardwareAcceleration = allow;
+			_logJavascript("Set allowHardwareAcceleration to " + _allowHardwareAcceleration);
 		}
 		
 
@@ -462,9 +469,14 @@ package org.mangui.chromeless {
 				in chrome ~37
 			**/
 			
+			//available = false; 
+			_allowHardwareAcceleration = root.loaderInfo.parameters.allowHardwareAcceleration as Boolean;
+			_logJavascript("flashvar allow = " + _allowHardwareAcceleration);
+			
 			if(!_allowHardwareAcceleration) 
 			{
-				available = false; /
+				available = false; 
+				_logJavascript("doing not allowing hardware acceleration " + _allowHardwareAcceleration);
 			}
 			
             _hls = new HLS();
@@ -494,6 +506,7 @@ package org.mangui.chromeless {
             stage.removeEventListener(StageVideoAvailabilityEvent.STAGE_VIDEO_AVAILABILITY, _onStageVideoState);
 
             var autoLoadUrl : String = root.loaderInfo.parameters.url as String;
+
             if (autoLoadUrl != null) {
                 _autoLoad = true;
                 _load(autoLoadUrl);
