@@ -552,7 +552,10 @@ package org.mangui.hls.stream {
                 order at the nominal playback rate), the client SHOULD NOT
                 choose a segment which starts less than three target durations from
                 the end of the Playlist file */
-                var maxLivePosition : Number = Math.max(0, _levels[level].duration - 3 * _levels[level].averageduration);
+
+				var segmentsBack : Number = 6; //usually 3
+                var maxLivePosition : Number = Math.max(0, _levels[level].duration - segmentsBack * _levels[level].averageduration);
+
                 if (position == -1) {
                     // seek 3 fragments from end
                     seek_position = maxLivePosition;

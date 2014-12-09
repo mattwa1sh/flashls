@@ -63,6 +63,7 @@ package org.mangui.chromeless {
 			ExternalInterface.addCallback("getBitrate", _getBitrate);
             ExternalInterface.addCallback("getPlaybackLevel", _getPlaybackLevel);
             ExternalInterface.addCallback("getLevels", _getLevels);
+			ExternalInterface.addCallback("getLevelsJson", _getLevelsJson);
             ExternalInterface.addCallback("getAutoLevel", _getAutoLevel);
             ExternalInterface.addCallback("getDuration", _getDuration);
             ExternalInterface.addCallback("getPosition", _getPosition);
@@ -252,6 +253,26 @@ package org.mangui.chromeless {
         protected function _getLevels() : Vector.<Level> {
             return _hls.levels;
         };
+
+		protected function _getLevelsJson() : String 
+		{
+			/*
+			var level_json : String = "{";
+			
+			_logJavascript(String(_hls.levels.length));
+			
+            for (var i : int = 0; i < _hls.levels.length; i++) 
+			{
+				_logJavascript(String (i) );
+				level_json += "'i':" + _hls.levels[i].bitrate + ",";
+            }
+			
+			level_json += "}";
+			*/
+			return JSON.stringify(_hls.levels);
+		};
+		
+		
 
         protected function _getAutoLevel() : Boolean {
             return _hls.autolevel;

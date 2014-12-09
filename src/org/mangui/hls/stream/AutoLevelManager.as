@@ -83,7 +83,7 @@ package org.mangui.hls.stream {
         public function getbestlevel(download_bandwidth : Number) : int {
             var max_level : int = _max_level;
             for (var i : int = max_level; i >= 0; i--) {
-                if (_bitrate[i] <= download_bandwidth) {
+                if (_bitrate[i] <= download_bandwidth) { //MW:: is this bitrate calculation?
                     return i;
                 }
             }
